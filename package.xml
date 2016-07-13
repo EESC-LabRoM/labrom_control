@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <name>labrom_control</name>
+  <version>0.0.0</version>
+  <description>The labrom_control package</description>
+
+ <maintainer email="romulortr@gmail.com">art</maintainer>
+
+ <license>GPLv3</license>
+
+ <author email="romulortr@gmail.com">Rômulo T Rodrigues</author> -->
+
+ <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+</package>
