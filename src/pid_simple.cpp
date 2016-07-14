@@ -16,10 +16,12 @@
 *   along with labrom_control.  If not, see <http://www.gnu.org/licenses/>.
 ***************************************************************************/
 
-//! labrom_control libraries
-
+// labrom_control libraries
 #include <labrom_control/pid_simple.h>
+
+// ros libraries
 #include "ros/ros.h"
+
 namespace controllers{
 namespace pid{
 /*

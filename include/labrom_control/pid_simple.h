@@ -23,6 +23,9 @@
 #include<labrom_control/controllers.h>
 // C++ libriares
 #include <cmath>
+// dynamic reconfigure libraries
+#include <dynamic_reconfigure/server.h>
+#include <labrom_control/PID_simpleConfig.h>
 
 namespace controllers{
 namespace pid{
@@ -43,6 +46,8 @@ class Simple : public Controller{
     double LoopOnce(double ref, double feedback, double dt, double d_ref=0);
     //! Get controller output
     double GetOutput(void);
+    // Dynamic reconfigure callback
+    void DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level);
 
   private:
     double kp_, ki_, kd_;                 //!< PID controller parameters
@@ -51,6 +56,9 @@ class Simple : public Controller{
     double state_ant_;                    //!< Last measured feedback value
     double output_val_;                   //!< Computed controller output
     bool active_;                         //!< Indicates wheter PID is active or not
+
+   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> config_server;
+   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType config_callback;
 }; 
 
 } // pid
