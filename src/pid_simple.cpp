@@ -35,6 +35,7 @@ Simple::Simple(std::string name_id): Controller(name_id), kp_(0), ki_(0), kd_(0)
   error_sum_ = 0;
   state_ant_ = 0;
   output_val_ = 0;  
+  active_ = false;
   // Dynamic reconfigure callback
   dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
   dynconfig_server_.setCallback(dynconfig_callback_);
@@ -56,6 +57,7 @@ Simple::Simple(std::string name_id, double kp, double ki, double kd, double wind
   error_sum_ = 0;
   state_ant_ = 0;  
   output_val_ = 0;
+  active_ = false;
   // Dynamic reconfigure callback
   dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
   dynconfig_server_.setCallback(dynconfig_callback_);
