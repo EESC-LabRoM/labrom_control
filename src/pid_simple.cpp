@@ -24,8 +24,9 @@
 
 namespace controllers{
 namespace pid{
-/*
-* Empty constructor
+/**
+* Simplified constructor
+* @param name_id name of the controller for identification  
 */
 Simple::Simple(std::string name_id): Controller(name_id), kp_(0), ki_(0), kd_(0){
   // Initializing variables
@@ -34,11 +35,15 @@ Simple::Simple(std::string name_id): Controller(name_id), kp_(0), ki_(0), kd_(0)
   error_sum_ = 0;
   state_ant_ = 0;
   output_val_ = 0;  
+  // Dynamic reconfigure callback
+  dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
+  dynconfig_server_.setCallback(dynconfig_callback_);
 }
 
 
-/*
+/**
 * Construct with controllers parameters
+* @param name_id name of the controller for identification
 * @param kp proportional gain
 * @param ki integrative gain
 * @param kd derivative gain
@@ -51,15 +56,18 @@ Simple::Simple(std::string name_id, double kp, double ki, double kd, double wind
   error_sum_ = 0;
   state_ant_ = 0;  
   output_val_ = 0;
+  // Dynamic reconfigure callback
+  dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
+  dynconfig_server_.setCallback(dynconfig_callback_);
 }
 
 
-/*
+/**
 * Empty destructor
 */
 Simple::~Simple(){};
 
-/*
+/**
 * Set PID controller parameters
 * @param kp proportional gain
 * @param ki integrative gain
@@ -73,10 +81,16 @@ bool Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
   kd_ = kd;
   windup_thresh_ = std::fabs(windup_thresh);
 
+  // Log
+  ROS_INFO("[%s][%s] New parameters uploaded [kp, ki, kd] <- [%f, %f, %f], [Anti wind-up value] <- [%f]", 
+              name_type_.c_str(), name_id_.c_str(), 
+              kp_, ki_, kd_,
+              windup_thresh_);
+
   return true;
 }
 
-/*
+/**
 * Flush integrative component stored in variable error_sum_
 */
 bool Simple::Flush(void){
@@ -85,7 +99,7 @@ bool Simple::Flush(void){
   return true;
 }
 
-/*
+/**
 * Loop once: computes pid controller iteration
 * @param ref reference value to be followed
 * @param feedback state value measured
@@ -125,7 +139,7 @@ double Simple::LoopOnce(double ref, double feedback, double dt, double d_ref){
 
 }
 
-/*
+/**
 * Get output value
 * @return last computed controller output
 */
@@ -133,5 +147,18 @@ double Simple::GetOutput(void){
   return output_val_;
 }
 
-} // pid
+/**
+* Dynamic reconfigure callback. 
+* This function is called for updating the controller parameters
+*/
+
+void Simple::DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level){
+  if (config.send){
+    // Upload parameters
+    this->SetParams(config.kp, config.ki, config.kd, config.windup_thresh);
+  }
+
+}  
+
+} // pid namespace
 } // controllers namespace

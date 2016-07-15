@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
+find_package(Boost REQUIRED COMPONENTS system)
+
 generate_dynamic_reconfigure_options(
   cfg/PID_simple.cfg
 )
@@ -28,6 +30,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   include
 )
  

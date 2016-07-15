@@ -57,8 +57,8 @@ class Simple : public Controller{
     double output_val_;                   //!< Computed controller output
     bool active_;                         //!< Indicates wheter PID is active or not
 
-   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> config_server;
-   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType config_callback;
+   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> dynconfig_server_;
+   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType dynconfig_callback_;
 }; 
 
 } // pid
