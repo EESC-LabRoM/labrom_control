@@ -25,6 +25,12 @@
 namespace controllers{
 namespace pid{
 /**
+* Empty constructor
+*/
+Simple::Simple(void){};
+
+
+/**
 * Simplified constructor
 * @param name_id name of the controller for identification  
 */
@@ -37,8 +43,8 @@ Simple::Simple(std::string name_id): Controller(name_id), kp_(0), ki_(0), kd_(0)
   output_val_ = 0;  
   active_ = false;
   // Dynamic reconfigure callback
-  dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
-  dynconfig_server_.setCallback(dynconfig_callback_);
+ // dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
+ // dynconfig_server_.setCallback(dynconfig_callback_);
 }
 
 
@@ -59,8 +65,8 @@ Simple::Simple(std::string name_id, double kp, double ki, double kd, double wind
   output_val_ = 0;
   active_ = false;
   // Dynamic reconfigure callback
-  dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
-  dynconfig_server_.setCallback(dynconfig_callback_);
+  //dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
+  //dynconfig_server_.setCallback(dynconfig_callback_);
 }
 
 
@@ -89,7 +95,7 @@ bool Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
               kp_, ki_, kd_,
               windup_thresh_);
 
-  return true;
+  return true; 
 }
 
 /**
@@ -98,6 +104,7 @@ bool Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
 bool Simple::Flush(void){
   // Flushing..
   error_sum_ = 0;
+	active_ = false;
   return true;
 }
 
@@ -129,7 +136,7 @@ double Simple::LoopOnce(double ref, double feedback, double dt, double d_ref){
   double D  = 0;
   if (active_){   // Avoid computing derivative for the first iteration
     double d_p  = (feedback - state_ant_) / dt;
-    D = kp_ * (d_ref - d_p); 
+    D = kd_ * (d_ref - d_p); 
   }else
     active_ = true;
   state_ant_ = feedback; // Save for next iteration  
@@ -153,7 +160,7 @@ double Simple::GetOutput(void){
 * Dynamic reconfigure callback. 
 * This function is called for updating the controller parameters
 */
-
+/*
 void Simple::DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level){
   if (config.send){
     // Upload parameters
@@ -161,6 +168,6 @@ void Simple::DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config
   }
 
 }  
-
+*/
 } // pid namespace
 } // controllers namespace

@@ -32,6 +32,8 @@ namespace pid{
 //! Simplified PID controller
 class Simple : public Controller{
   public:
+    //! Empty Constructor
+    Simple(void);
     //! Constructor
     Simple(std::string name_id);
     //! Constructor with parameters
@@ -47,7 +49,7 @@ class Simple : public Controller{
     //! Get controller output
     double GetOutput(void);
     // Dynamic reconfigure callback
-    void DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level);
+   // void DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level);
 
   private:
     double kp_, ki_, kd_;                 //!< PID controller parameters
@@ -57,8 +59,8 @@ class Simple : public Controller{
     double output_val_;                   //!< Computed controller output
     bool active_;                         //!< Indicates wheter PID is active or not
 
-   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> dynconfig_server_;
-   dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType dynconfig_callback_;
+  // dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> dynconfig_server_;
+ //  dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType dynconfig_callback_;
 }; 
 
 } // pid
