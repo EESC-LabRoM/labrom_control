@@ -29,17 +29,18 @@ class Controller{
     //! Empty Constructor [AVOID]
     Controller(){};
     //! Construct that receives name identifier [PREFERRED]
-    Controller(std::string name_id): name_id_(name_id){};
+    Controller(std::string name_type, std::string name_id): name_type_(name_type), name_id_(name_id){};
     //! Destructor
     ~Controller(void){};
     //! Loop once
-    virtual double LoopOnce(double ref, double feedback, double dt, double d_ref=0)=0;   
+    virtual double LoopOnce(double ref, double feedback, double d_ref=0)=0;   
     //! Get output value
-    virtual double GetOutput(void) = 0;
+    double GetOutput(void){return output_;}
 
   protected:
     std::string name_id_;             //!< Identification
-    std::string name_type_   ;             //!< Controller type e.g. pid, mpc, lqr..         
+    std::string name_type_   ;        //!< Controller type e.g. pid, mpc, lqr..        
+    double output_;                   //!< Computed controller output 
 };
 
 } // namespace controllers

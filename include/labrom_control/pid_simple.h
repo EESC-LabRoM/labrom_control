@@ -23,12 +23,13 @@
 #include<labrom_control/controllers.h>
 // C++ libriares
 #include <cmath>
-// dynamic reconfigure libraries
-#include <dynamic_reconfigure/server.h>
-#include <labrom_control/PID_simpleConfig.h>
+// ROS libraries
+#include "ros/ros.h"
 
 namespace controllers{
 namespace pid{
+// PID state machine
+enum PIDState{IDLE=0, RESET, ACTIVE};
 //! Simplified PID controller
 class Simple : public Controller{
   public:
@@ -41,26 +42,23 @@ class Simple : public Controller{
     //! Empty Destructor 
     ~Simple(void);
     //! Set parameters handle
-    bool SetParams(double kp=0, double ki=0, double kd=0, double windup_thresh=0);
+    void SetParams(double kp=0, double ki=0, double kd=0, double windup_thresh=0);
     //! Flush integrative sumation
-    bool Flush(void);
+    void Reset(void);
     //! Loop a controller iteration
-    double LoopOnce(double ref, double feedback, double dt, double d_ref=0);
-    //! Get controller output
-    double GetOutput(void);
-    // Dynamic reconfigure callback
-   // void DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level);
+    double LoopOnce(double ref, double feedback, double d_ref=0);
+
 
   private:
-    double kp_, ki_, kd_;                 //!< PID controller parameters
-    double windup_thresh_;                //!< Anti-windup threshold
     double error_sum_;                    //!< Integrative sumation
-    double state_ant_;                    //!< Last measured feedback value
-    double output_val_;                   //!< Computed controller output
-    bool active_;                         //!< Indicates wheter PID is active or not
+    double previous_state_;                    //!< Last measured feedback value
+    double previous_time_;
+    PIDState state_;
 
-  // dynamic_reconfigure::Server<labrom_control::PID_simpleConfig> dynconfig_server_;
- //  dynamic_reconfigure::Server<labrom_control::PID_simpleConfig>::CallbackType dynconfig_callback_;
+    double _kp, _ki, _kd;                 //!< PID controller parameters
+    double _windup_thresh;                //!< Anti-windup threshold
+    double _max_sampling_time;
+
 }; 
 
 } // pid

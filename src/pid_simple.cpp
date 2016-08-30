@@ -32,41 +32,27 @@ Simple::Simple(void){};
 
 /**
 * Simplified constructor
-* @param name_id name of the controller for identification  
+* @param[in] name_id name of the controller for identification  
 */
-Simple::Simple(std::string name_id): Controller(name_id), kp_(0), ki_(0), kd_(0){
+Simple::Simple(std::string name_id): Controller("PID", name_id), _kp(0), _ki(0), _kd(0){
   // Initializing variables
-  name_type_ = "PID";
-  windup_thresh_ = 0;
-  error_sum_ = 0;
-  state_ant_ = 0;
-  output_val_ = 0;  
-  active_ = false;
-  // Dynamic reconfigure callback
- // dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
- // dynconfig_server_.setCallback(dynconfig_callback_);
+  _windup_thresh = 0;
+  state_ = IDLE;
 }
 
 
 /**
 * Construct with controllers parameters
-* @param name_id name of the controller for identification
-* @param kp proportional gain
-* @param ki integrative gain
-* @param kd derivative gain
-* @param windup_thresh threshold for anti-windup filter
+* @param[in] name_id name of the controller for identification
+* @param[in] kp proportional gain
+* @param[in] ki integrative gain
+* @param[in] kd derivative gain
+* @param[in] windup_thresh threshold for anti-windup filter
 */
-Simple::Simple(std::string name_id, double kp, double ki, double kd, double windup_thresh): Controller(name_id), kp_(kp), ki_(ki), kd_(kd){
+Simple::Simple(std::string name_id, double kp, double ki, double kd, double windup_thresh): Controller("PID", name_id), _kp(kp), _ki(ki), _kd(kd){
   // Initializing variables
-  name_type_ = "PID";
-  windup_thresh_ = windup_thresh;
-  error_sum_ = 0;
-  state_ant_ = 0;  
-  output_val_ = 0;
-  active_ = false;
-  // Dynamic reconfigure callback
-  //dynconfig_callback_ = boost::bind(&Simple::DynamicReconfigureCallback, this, _1, _2);
-  //dynconfig_server_.setCallback(dynconfig_callback_);
+  _windup_thresh = windup_thresh;
+  state_ = IDLE;
 }
 
 
@@ -77,97 +63,85 @@ Simple::~Simple(){};
 
 /**
 * Set PID controller parameters
-* @param kp proportional gain
-* @param ki integrative gain
-* @param kd derivative gain
-* @param windup_thresh threshold for anti-windup filter
+* @param[in] kp proportional gain
+* @param[in] ki integrative gain
+* @param[in] kd derivative gain
+* @param[in] windup_thresh threshold for anti-windup filter
 */
-bool Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
+void Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
   // Modifying PID controller parameters..
-  kp_ = kp;
-  ki_ = ki;
-  kd_ = kd;
-  windup_thresh_ = std::fabs(windup_thresh);
+  _kp = kp;
+  _ki = ki;
+  _kd = kd;
+  _windup_thresh = std::fabs(windup_thresh);
 
   // Log
   ROS_INFO("[%s][%s] New parameters uploaded [kp, ki, kd] <- [%f, %f, %f], [Anti wind-up value] <- [%f]", 
               name_type_.c_str(), name_id_.c_str(), 
-              kp_, ki_, kd_,
-              windup_thresh_);
-
-  return true; 
+              _kp, _ki, _kd,
+              _windup_thresh);
 }
 
 /**
 * Flush integrative component stored in variable error_sum_
 */
-bool Simple::Flush(void){
+void Simple::Reset(void){
   // Flushing..
   error_sum_ = 0;
-	active_ = false;
-  return true;
+  previous_time_ = 0;
 }
 
 /**
 * Loop once: computes pid controller iteration
-* @param ref reference value to be followed
-* @param feedback state value measured
-* @param dt coontroller sampling time
-* @param d_ref speed value to be followed [DEFAULT = 0]
+* @param[in] ref reference value to be followed
+* @param[in] feedback state value measured
+* @param[in] dt coontroller sampling time
+* @param[in] d_ref speed value to be followed [DEFAULT = 0]
 * @return The output vlaue computed by the pid controller
 */
-double Simple::LoopOnce(double ref, double feedback, double dt, double d_ref){
-  // Proportional
-  double P = kp_ * (ref - feedback);
+double Simple::LoopOnce(double ref, double feedback, double d_ref){
+  double P, I, D;
+  double dt = ros::Time::now().toSec() - previous_time_;
 
-  // Integrative sumation and anti-windup
-  error_sum_  += (ref - feedback)*dt ;
-  double I = error_sum_ * ki_;
-  if (I > windup_thresh_){
-    I = windup_thresh_;
-    std::clog << "Anti-windup upper threshold reached" << std::endl;
+  if (dt > _max_sampling_time)
+    state_ = RESET;
+
+  switch (state_){
+    // Nothing to do
+    case IDLE: 
+      output_ = 0;
+      state_ = RESET;
+    // Reset controller initial parameters
+    case RESET:
+      error_sum_ = 0;
+      output_ = 0;
+      previous_state_ = feedback;
+      state_ = ACTIVE;
+      break;
+    // Iterate control law itself
+    case ACTIVE:
+     /// Proportional
+     P = _kp * (ref - feedback);
+     /// Integrative sumation and anti-windup
+     error_sum_  += (ref - feedback)*dt ;
+     I = error_sum_ * _ki;
+     if (std::fabs(I) > _windup_thresh){
+       I = _windup_thresh * I/std::fabs(I);
+       ROS_WARN("[%s][%s]: Anti-windup threshold reached", name_type_.c_str(), name_id_.c_str());
+     }
+     /// Derivative
+     D  = (d_ref - (feedback - previous_state_) / dt) * _kd; 
+     /// PID controller output
+     output_    = P + I + D;
+     break;
   }
-  else if ( I < -windup_thresh_ ){
-    I = -windup_thresh_;
-    std::clog << "Anti-windup lower threshol reached" << std::endl;
-  }  
- 
-  // Derivative
-  double D  = 0;
-  if (active_){   // Avoid computing derivative for the first iteration
-    double d_p  = (feedback - state_ant_) / dt;
-    D = kd_ * (d_ref - d_p); 
-  }else
-    active_ = true;
-  state_ant_ = feedback; // Save for next iteration  
+  // Saving values for next iteration
+  previous_time_ = ros::Time::now().toSec();
+  previous_state_ = feedback;
 
-  // PID controller output
-  output_val_    = P + I + D;
-
-  return output_val_;
-
+  return output_;
 }
 
-/**
-* Get output value
-* @return last computed controller output
-*/
-double Simple::GetOutput(void){
-  return output_val_;
-}
 
-/**
-* Dynamic reconfigure callback. 
-* This function is called for updating the controller parameters
-*/
-/*
-void Simple::DynamicReconfigureCallback(labrom_control::PID_simpleConfig &config, uint32_t level){
-  if (config.send){
-    // Upload parameters
-    this->SetParams(config.kp, config.ki, config.kd, config.windup_thresh);
-  }
-
-}  
-*/
 } // pid namespace
 } // controllers namespace
