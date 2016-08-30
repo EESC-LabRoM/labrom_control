@@ -37,6 +37,7 @@ Simple::Simple(void){};
 Simple::Simple(std::string name_id): Controller("PID", name_id), _kp(0), _ki(0), _kd(0){
   // Initializing variables
   _windup_thresh = 0;
+  _max_sampling_time = 1;
   state_ = IDLE;
 }
 
@@ -52,6 +53,7 @@ Simple::Simple(std::string name_id): Controller("PID", name_id), _kp(0), _ki(0),
 Simple::Simple(std::string name_id, double kp, double ki, double kd, double windup_thresh): Controller("PID", name_id), _kp(kp), _ki(ki), _kd(kd){
   // Initializing variables
   _windup_thresh = windup_thresh;
+  _max_sampling_time = 1;
   state_ = IDLE;
 }
 
@@ -107,10 +109,12 @@ double Simple::LoopOnce(double ref, double feedback, double d_ref){
     state_ = RESET;
 
   switch (state_){
+
     // Nothing to do
     case IDLE: 
       output_ = 0;
       state_ = RESET;
+
     // Reset controller initial parameters
     case RESET:
       error_sum_ = 0;
@@ -118,6 +122,7 @@ double Simple::LoopOnce(double ref, double feedback, double d_ref){
       previous_state_ = feedback;
       state_ = ACTIVE;
       break;
+
     // Iterate control law itself
     case ACTIVE:
      /// Proportional
