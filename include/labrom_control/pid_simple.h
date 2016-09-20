@@ -47,7 +47,8 @@ class Simple : public Controller{
     void Reset(void);
     //! Loop a controller iteration
     double LoopOnce(double ref, double feedback, double d_ref=0);
-
+    //! Loop a controller iteration
+    double LoopOnce(double ref, double feedback, double d_ref, double d_feedback);
 
   private:
     double error_sum_;                    //!< Integrative sumation

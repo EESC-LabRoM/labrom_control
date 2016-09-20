@@ -85,19 +85,16 @@ void Simple::SetParams(double kp, double ki, double kd, double windup_thresh){
 }
 
 /**
-* Flush integrative component stored in variable error_sum_
+* Force a a change PID state to flush variables
 */
 void Simple::Reset(void){
-  // Flushing..
-  error_sum_ = 0;
-  previous_time_ = 0;
+  state_ = RESET;
 }
 
 /**
 * Loop once: computes pid controller iteration
 * @param[in] ref reference value to be followed
 * @param[in] feedback state value measured
-* @param[in] dt coontroller sampling time
 * @param[in] d_ref speed value to be followed [DEFAULT = 0]
 * @return The output vlaue computed by the pid controller
 */
@@ -147,6 +144,58 @@ double Simple::LoopOnce(double ref, double feedback, double d_ref){
   return output_;
 }
 
+
+/**
+* Loop once: computes pid controller iteration
+* @param[in] ref reference value to be followed
+* @param[in] feedback state value measured
+* @param[in] d_ref speed value to be followed 
+* @param[in  speed value measured 
+* @return The output vlaue computed by the pid controller
+*/
+double Simple::LoopOnce(double ref, double feedback, double d_ref, double d_feedback){
+  double P, I, D;
+  double dt = ros::Time::now().toSec() - previous_time_;
+
+  if (dt > _max_sampling_time)
+    state_ = RESET;
+
+  switch (state_){
+
+    // Nothing to do
+    case IDLE: 
+      output_ = 0;
+      state_ = RESET;
+
+    // Reset controller initial parameters
+    case RESET:
+      error_sum_ = 0;
+      output_ = 0;
+      state_ = ACTIVE;
+      break;
+
+    // Iterate control law itself
+    case ACTIVE:
+     /// Proportional
+     P = _kp * (ref - feedback);
+     /// Integrative sumation and anti-windup
+     error_sum_  += (ref - feedback)*dt ;
+     I = error_sum_ * _ki;
+     if (std::fabs(I) > _windup_thresh){
+       I = _windup_thresh * I/std::fabs(I);
+       ROS_WARN("[%s][%s]: Anti-windup threshold reached", name_type_.c_str(), name_id_.c_str());
+     }
+     /// Derivative
+     D  = (d_ref - d_feedback) * _kd; 
+     /// PID controller output
+     output_    = P + I + D;
+     break;
+  }
+  // Saving values for next iteration
+  previous_time_ = ros::Time::now().toSec();
+
+  return output_;
+}
 
 } // pid namespace
 } // controllers namespace
