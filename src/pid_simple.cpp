@@ -125,11 +125,13 @@ double Simple::LoopOnce(double ref, double feedback, double d_ref){
      /// Proportional
      P = _kp * (ref - feedback);
      /// Integrative sumation and anti-windup
-     error_sum_  += (ref - feedback)*dt ;
-     I = error_sum_ * _ki;
+     double increment = (ref - feedback)*dt ;
+     I = (error_sum_ + increment) * _ki;
      if (std::fabs(I) > _windup_thresh){
        I = _windup_thresh * I/std::fabs(I);
-       ROS_WARN("[%s][%s]: Anti-windup threshold reached", name_type_.c_str(), name_id_.c_str());
+       ROS_WARN("[%s][%s]: Anti-windup threshold reached (value: %.2f)", name_type_.c_str(), name_id_.c_str(), I);
+     } else{
+       error_sum_ += increment;
      }
      /// Derivative
      D  = (d_ref - (feedback - previous_state_) / dt) * _kd; 
@@ -179,11 +181,13 @@ double Simple::LoopOnce(double ref, double feedback, double d_ref, double d_feed
      /// Proportional
      P = _kp * (ref - feedback);
      /// Integrative sumation and anti-windup
-     error_sum_  += (ref - feedback)*dt ;
-     I = error_sum_ * _ki;
+     double increment = (ref - feedback)*dt ;
+     I = (error_sum_ + increment) * _ki;
      if (std::fabs(I) > _windup_thresh){
        I = _windup_thresh * I/std::fabs(I);
-       ROS_WARN("[%s][%s]: Anti-windup threshold reached", name_type_.c_str(), name_id_.c_str());
+       ROS_WARN("[%s][%s]: Anti-windup threshold reached (value: %.2f)", name_type_.c_str(), name_id_.c_str(), I);
+     } else{
+       error_sum_ += increment;
      }
      /// Derivative
      D  = (d_ref - d_feedback) * _kd; 
